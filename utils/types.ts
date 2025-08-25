@@ -73,8 +73,18 @@ export interface SimplifiedInteraction {
 }
 
 export type CommandExecuteUnpromised = {
-  content: string;
+  content?: string;
   flags?: MessageFlags;
+  attachments?: {
+    id: number;
+    filename: string;
+    description?: string;
+  }[];
+  files?: {
+    attachment: Buffer;
+    name: string;
+    description?: string;
+  }[];
 };
 
 export type CommandExecuteResult = Promise<CommandExecuteUnpromised>;

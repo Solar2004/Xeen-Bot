@@ -90,15 +90,25 @@ export default {
 
       const aiResponse = response.data.choices[0]?.message?.content || "No response received from AI.";
 
-      const truncatedResponse =
-        aiResponse.length > 1900
-          ? aiResponse.slice(0, 1900) +
-            "\n...[truncated to keep below 2000 characters]"
-          : aiResponse;
+      // If response is too long, send as file attachment
+      if (aiResponse.length > 1900) {
+        const buffer = Buffer.from(aiResponse, 'utf-8');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `ai-response-${timestamp}.txt`;
+        
+        return {
+          content: "The response its too large, so wee send it as an archive:",
+          files: [{
+            attachment: buffer,
+            name: filename,
+            description: "AI Full Response"
+          }]
+        };
+      }
 
-      // Return the AI's response
+      // Return the AI's response normally if it's short enough
       return {
-        content: truncatedResponse,
+        content: aiResponse,
       };
     } catch (error) {
       // Log any errors that occur during the AI chat process

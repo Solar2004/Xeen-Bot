@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import axios from "axios";
 import { InteractionResponseType, MessageFlags } from "discord-api-types/v10";
 import { InteractionType, verifyKey } from "discord-interactions";
+import FormData from "form-data";
 import getRawBody from "raw-body";
 import commands from "./.discraft/commands/index";
 import { logger } from "./utils/logger";
@@ -122,18 +123,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // PATCH the original response
         try {
-          await axios.patch(
-            `https://discord.com/api/v10/webhooks/${message.application_id}/${message.token}/messages/@original`,
-            {
+          // Check if we need to send files
+          if (commandResult.files && commandResult.files.length > 0) {
+            // Use multipart/form-data for file uploads
+            const form = new FormData();
+            
+            // Add the JSON payload
+            const payload = {
               content: commandResult.content ?? "",
               flags: commandResult.flags,
-            },
-            {
-              headers: {
-                "Content-Type": "application/json",
+            };
+            form.append('payload_json', JSON.stringify(payload));
+            
+            // Add files
+            commandResult.files.forEach((file, index) => {
+              form.append(`files[${index}]`, file.attachment, {
+                filename: file.name,
+                contentType: 'text/plain',
+              });
+            });
+            
+            await axios.patch(
+              `https://discord.com/api/v10/webhooks/${message.application_id}/${message.token}/messages/@original`,
+              form,
+              {
+                headers: {
+                  ...form.getHeaders(),
+                },
               },
-            },
-          );
+            );
+          } else {
+            // Regular JSON response for text-only messages
+            await axios.patch(
+              `https://discord.com/api/v10/webhooks/${message.application_id}/${message.token}/messages/@original`,
+              {
+                content: commandResult.content ?? "",
+                flags: commandResult.flags,
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              },
+            );
+          }
           logger.debug("Original response edited successfully");
 
           /**
