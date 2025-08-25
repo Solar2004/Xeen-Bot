@@ -9,7 +9,12 @@ export interface SimplifiedInteraction {
   data: {
     id: string;
     name: string;
-    options?: { name: string; type: number; value: string }[];
+    options?: { 
+      name: string; 
+      type: number; 
+      value: string;
+      options?: { name: string; type: number; value: string }[];
+    }[];
     resolved?: {
       attachments?: {
         [key: string]: {
